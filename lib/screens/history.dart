@@ -8,6 +8,8 @@ import 'package:hugo/main.dart';
 import 'package:hugo/screens/search.dart';
 import 'package:hugo/screens/report.dart';
 
+import '../atlas.dart' as atlas;
+
 class History extends StatefulWidget {
   History();
 
@@ -21,22 +23,22 @@ class HistoryState extends State<History> {
   var _monthScores = {};
   var _months = [];
   Map<String, String> _monthsExp = {
-    '1': tr('january'),
-    '2': tr('february'),
-    '3': tr('march'),
-    '4': tr('april'),
-    '5': tr('may'),
-    '6': tr('june'),
-    '7': tr('july'),
-    '8': tr('august'),
-    '9': tr('september'),
+    '01': tr('january'),
+    '02': tr('february'),
+    '03': tr('march'),
+    '04': tr('april'),
+    '05': tr('may'),
+    '06': tr('june'),
+    '07': tr('july'),
+    '08': tr('august'),
+    '09': tr('september'),
     '10': tr('october'),
     '11': tr('november'),
     '12': tr('december')
   };
 
   Future<int> _get() async {
-    _monthScores = await _auth.getMonthScores(Provider.of<UserInfo>(context, listen: false).getUser());
+    _monthScores = await atlas.getMonthScores(Provider.of<UserInfo>(context, listen: false).getUser());
     _months = _monthScores.keys.toList();
     return 0;
   }
@@ -50,7 +52,7 @@ class HistoryState extends State<History> {
         builder: (BuildContext context, AsyncSnapshot<int> snapshot) {
           if (snapshot.connectionState == ConnectionState.done) {
             return Scaffold(
-                appBar: AppBar(title: Text('Report')),
+                appBar: AppBar(title: Text(tr('report'))),
                 bottomNavigationBar: BottomNavigationBar(
                     currentIndex: 2,
                     items: <BottomNavigationBarItem>[
@@ -58,7 +60,7 @@ class HistoryState extends State<History> {
                           icon: Icon(Icons.home), label: tr('home')),
                       BottomNavigationBarItem(
                         icon: Icon(Icons.search),
-                        label: 'Search',
+                        label: tr('search'),
                       ),
                       BottomNavigationBarItem(
                           icon: Icon(Icons.person), label: tr('profile'))
@@ -105,13 +107,13 @@ class HistoryState extends State<History> {
                           left: 0.0, right: 0.0, top: 0.0, bottom: 0.0),
                       itemBuilder: (BuildContext ctxt, int index) {
                         int i2 = _monthScores.length - index - 1;
-                        String ym = _months[i2];
-                        String ymp = i2 == 0 ? '' : _months[i2 - 1];
+                        String ym = _months[i2].toString();
+                        String ymp = i2 == 0 ? '' : _months[i2 - 1].toString();
                         double s1 = _monthScores[ym].toDouble();
                         double s2 = i2 == 0 ? 0.0 : _monthScores[ymp].toDouble();
                         return new ListTile(
                             title: Text(
-                                _monthsExp[ym.split('-')[1]]+' '+ym.split('-')[0]
+                                _monthsExp[ym.substring(4, 6)] + ' ' + ym.substring(0, 4)
                             ),
                             subtitle: Text('$s1'),
                              trailing: i2 == 0 ? null : Container(
@@ -133,13 +135,13 @@ class HistoryState extends State<History> {
                               ])
                             ),
                             onTap: () {
-                              int year = int.parse(ym.split('-')[0]);
-                              int month = int.parse(ym.split('-')[1]);
+                              int year = int.parse(ym.substring(0, 4));
+                              int month = int.parse(ym.substring(4, 6));
                               Navigator.push(
                                   context,
                                   new MaterialPageRoute(
                                       builder: (context) => new Report(
-                                          _monthsExp[ym.split('-')[1]]+' '+ym.split('-')[0],
+                                          _monthsExp[ym.substring(4, 6)] + ' ' + ym.substring(0, 4),
                                           DateTime.utc(year, month),
                                           DateTime.utc(year, month + 1)
                                               .subtract(Duration(seconds: 1)),

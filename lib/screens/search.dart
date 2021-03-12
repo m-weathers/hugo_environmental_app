@@ -1,17 +1,17 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flushbar/flushbar.dart';
 import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
 import 'package:provider/provider.dart';
 
-import 'package:hugo/auth.dart';
 import 'package:hugo/main.dart';
 import 'package:hugo/screens/history.dart';
 import 'package:hugo/screens/login.dart';
 import 'package:hugo/screens/view.dart';
+
+import '../atlas.dart' as atlas;
 
 class Search extends StatefulWidget {
   Search();
@@ -21,7 +21,6 @@ class Search extends StatefulWidget {
 }
 
 class SearchState extends State<Search> {
-  Auth _auth = new Auth();
   List<Map<String, dynamic>> _results = new List<Map<String, dynamic>>();
   String _userSearchTerm = '', _category = 'All';
   bool _isDoingSearch = false;
@@ -86,7 +85,7 @@ class SearchState extends State<Search> {
                                   _category = newvalue;
                                 });
                               },
-                              items: _auth.categories
+                              items: atlas.categories
                                   .map<DropdownMenuItem<String>>(
                                       (String value) {
                                 return DropdownMenuItem<String>(
@@ -102,7 +101,6 @@ class SearchState extends State<Search> {
                           onChanged: (text) {
                             _userSearchTerm = text;
                           },
-                          //autofocus: true,
                         ),
                       ),
                       SizedBox(width: 15)
@@ -136,10 +134,11 @@ class SearchState extends State<Search> {
                           String barcodeScanRes =
                               await FlutterBarcodeScanner.scanBarcode(
                                   "#ff0000", "Cancel", false, ScanMode.BARCODE);
-                          String _id = await _auth.getBarcode(barcodeScanRes);
+                          print(barcodeScanRes);
+                          String _id = await atlas.getBarcode(barcodeScanRes);
                           if (_id != '') {
                             Map<String, dynamic> itemData =
-                                await _auth.getProductCached(context, _id);
+                                await atlas.getProductCached(context, _id);
                             Navigator.push(
                                 context,
                                 new MaterialPageRoute(
@@ -169,15 +168,15 @@ class SearchState extends State<Search> {
                     itemBuilder: (BuildContext ctxt, int index) {
                       return new ListTile(
                           title: Text(
-                            _results[index]['id'],
+                            _results[index]['_id'],
                           ),
-                          subtitle: Text('${_results[index]["i"]}'),
+                          subtitle: Text('${_results[index]["INDEX"]}'),
                           trailing: Icon(
                             Icons.arrow_forward_ios,
                           ),
                           tileColor: Color.fromRGBO(
-                              ((_results[index]['i'] / 200) * 255).floor(),
-                              ((1 - _results[index]['i'] / 200) * 255).floor(),
+                              ((_results[index]['INDEX'] / 200) * 255).floor(),
+                              ((1 - _results[index]['INDEX'] / 200) * 255).floor(),
                               0,
                               0.5),
                           onTap: () {
@@ -186,22 +185,15 @@ class SearchState extends State<Search> {
                                 new MaterialPageRoute(
                                     builder: (context) =>
                                         new View(_results[index])));
-                            // new PageRouteBuilder(
-                            //     transitionDuration: Duration(seconds: 1),
-                            //     pageBuilder: (_, __, ___) =>
-                            //         new View(_results[index])));
                           },
                           leading: Hero(
                             child: Container(
-                              child: CachedNetworkImage(
-                                  imageUrl: _results[index]['image'],
-                                  fit: BoxFit.fill,
-                                  progressIndicatorBuilder: (context, url,
-                                          downloadProgress) =>
-                                      CircularProgressIndicator(
-                                          value: downloadProgress.progress)),
+                              child: Image.memory(
+                                _results[index]['IMAGE'].byteList,
+                                fit: BoxFit.fill
+                              ),
                             ),
-                            tag: _results[index]['id'],
+                            tag: _results[index]['_id'],
                           ));
                     })
               ])),
@@ -217,15 +209,18 @@ class SearchState extends State<Search> {
     }
 
     List<Map<String, dynamic>> _names =
-        await _auth.getSearch(context, _userSearchTerm, _category);
+        await atlas.getSearch(context, _userSearchTerm, _category);
     if (_names.length == 0 && (_category != "All" || _userSearchTerm != "")) {
+      _isDoingSearch = false;
+      setState(() {});
       Flushbar(
               message: 'No results found for your search.',
               duration: Duration(seconds: 3))
           .show(context);
+
     }
     await Future.forEach(_names, (Map<String, dynamic> itemData) async {
-      _results.add(itemData);
+      _results.add(atlas.finishProductInfo(itemData));
       setState(() {});
     });
 

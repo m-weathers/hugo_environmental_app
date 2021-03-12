@@ -1,17 +1,17 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flushbar/flushbar.dart';
 import 'package:provider/provider.dart';
 
-import 'package:hugo/auth.dart';
 import 'package:hugo/main.dart';
 import 'package:hugo/screens/history.dart';
 import 'package:hugo/screens/login.dart';
 import 'package:hugo/screens/report.dart';
 import 'package:hugo/screens/search.dart';
+
+import '../atlas.dart' as atlas;
 
 class View extends StatefulWidget {
   final Map<String, dynamic> _data;
@@ -38,8 +38,6 @@ class ViewState extends State<View> {
       _c5Text,
       _c5Stars;
 
-  Auth _auth = new Auth();
-
   ViewState(this._data);
 
   @override
@@ -59,42 +57,37 @@ class ViewState extends State<View> {
     // ranking for a variable. (Icon is currently boxes not stars.)
     _c1Text = [];
     _c1Stars = [];
-    for (int i = 0; i < _auth.variables[0].length; i++) {
-      _c1Text.add(new Text(_auth.variables[0][i]));
-      _c1Stars
-          .add(new StarDisplay(value: (_data['cat1'][i + 1] / 2.5).floor()));
+    for (int i = 0; i < atlas.variables[0].length; i++) {
+      _c1Text.add(new Text(atlas.variables[0][i]));
+      _c1Stars.add(new StarDisplay(value: (_data['CAT1'][i] / 2.5).floor()));
     }
 
     _c2Text = [];
     _c2Stars = [];
-    for (int i = 0; i < _auth.variables[1].length; i++) {
-      _c2Text.add(new Text(_auth.variables[1][i]));
-      _c2Stars
-          .add(new StarDisplay(value: (_data['cat2'][i + 1] / 2.5).floor()));
+    for (int i = 0; i < atlas.variables[1].length; i++) {
+      _c2Text.add(new Text(atlas.variables[1][i]));
+      _c2Stars.add(new StarDisplay(value: (_data['CAT2'][i] / 2.5).floor()));
     }
 
     _c3Text = [];
     _c3Stars = [];
-    for (int i = 0; i < _auth.variables[2].length; i++) {
-      _c3Text.add(new Text(_auth.variables[2][i]));
-      _c3Stars
-          .add(new StarDisplay(value: (_data['cat3'][i + 1] / 2.5).floor()));
+    for (int i = 0; i < atlas.variables[2].length; i++) {
+      _c3Text.add(new Text(atlas.variables[2][i]));
+      _c3Stars.add(new StarDisplay(value: (_data['CAT3'][i] / 2.5).floor()));
     }
 
     _c4Text = [];
     _c4Stars = [];
-    for (int i = 0; i < _auth.variables[3].length; i++) {
-      _c4Text.add(new Text(_auth.variables[3][i]));
-      _c4Stars
-          .add(new StarDisplay(value: (_data['cat4'][i + 1] / 2.5).floor()));
+    for (int i = 0; i < atlas.variables[3].length; i++) {
+      _c4Text.add(new Text(atlas.variables[3][i]));
+      _c4Stars.add(new StarDisplay(value: (_data['CAT4'][i] / 2.5).floor()));
     }
 
     _c5Text = [];
     _c5Stars = [];
-    for (int i = 0; i < _auth.variables[4].length; i++) {
-      _c5Text.add(new Text(_auth.variables[4][i]));
-      _c5Stars
-          .add(new StarDisplay(value: (_data['cat5'][i + 1] / 2.5).floor()));
+    for (int i = 0; i < atlas.variables[4].length; i++) {
+      _c5Text.add(new Text(atlas.variables[4][i]));
+      _c5Stars.add(new StarDisplay(value: (_data['CAT5'][i] / 2.5).floor()));
     }
 
     return Scaffold(
@@ -141,7 +134,7 @@ class ViewState extends State<View> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: <Widget>[
                 SizedBox(width: 16),
-                Text('${_data["id"]}', style: TextStyle(fontSize: 18.0)),
+                Text('${_data["_id"]}', style: TextStyle(fontSize: 18.0)),
               ]),
           SizedBox(height: 8),
           Row(
@@ -150,7 +143,7 @@ class ViewState extends State<View> {
               children: <Widget>[
                 SizedBox(width: 16),
                 Text(
-                    '${tr("in0")}: ${tr(_data["category"][0].toUpperCase()+_data["category"].substring(1))}'),
+                    '${tr("in0")}: ${tr(_data["CATEGORY"][0].toUpperCase() + _data["CATEGORY"].substring(1))}'),
               ]),
           SizedBox(height: 14),
           Row(
@@ -158,22 +151,15 @@ class ViewState extends State<View> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: <Widget>[
                 Hero(
-                    child: CachedNetworkImage(
-                        imageUrl: _data['image'],
-                        fit: BoxFit.fitHeight,
-                        height: 120,
-                        width: 120,
-                        progressIndicatorBuilder:
-                            (context, url, downloadProgress) =>
-                                CircularProgressIndicator(
-                                    value: downloadProgress.progress)),
-                    tag: _data['id']),
+                    child: Image.memory(_data['IMAGE'].byteList,
+                        fit: BoxFit.fitHeight, height: 120, width: 120),
+                    tag: _data['_id']),
                 SizedBox(width: 30),
                 Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: <Widget>[
-                      Text('${_data["i"]}',
+                      Text('${_data["INDEX"]}',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                               fontSize: 50.0,
@@ -231,16 +217,16 @@ class ViewState extends State<View> {
                         return;
                       }
                       if (_amount > 0) {
-                        _auth.addPurchase2(
+                        atlas.addPurchase(
                             Provider.of<UserInfo>(context, listen: false)
                                 .getUser(),
-                            _data['id'],
+                            _data['_id'],
                             _amount,
-                            _data['i']);
+                            _data['INDEX']);
                         Flushbar(
                                 message: '$_amount ' +
                                     tr('of0') +
-                                    ' ${_data["id"]} ' +
+                                    ' ${_data["_id"]} ' +
                                     tr('haveBeen'),
                                 duration: Duration(seconds: 3))
                             .show(context);

@@ -32,7 +32,6 @@ class RegisterState extends State<Register> {
                       tr('regSuccess'),
                   duration: Duration(seconds: 3))
               .show(context);
-          _auth.initUser(_cEmail.text);
           Navigator.of(context).pushAndRemoveUntil(
               MaterialPageRoute(builder: (context) => MyHomePage()),
               (Route route) => false);

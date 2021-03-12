@@ -6,19 +6,24 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:localstorage/localstorage.dart';
 import 'package:provider/provider.dart';
 
-import 'package:hugo/auth.dart';
 import 'package:hugo/screens/about.dart';
 import 'package:hugo/screens/history.dart';
 import 'package:hugo/screens/login.dart';
 import 'package:hugo/screens/search.dart';
 
+import 'atlas.dart' as atlas;
+
 void main() {
-  runApp(MyApp());
+  runApp(
+    EasyLocalization(
+        supportedLocales: [Locale('en', ''), Locale('es', '')],
+        path: 'assets/translation',
+        fallbackLocale: Locale('en', ''),
+        child: MyApp()),
+  );
 }
 
 class MyApp extends StatelessWidget {
-  var storage = new LocalStorage('hugoapp.json');
-
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
@@ -26,37 +31,34 @@ class MyApp extends StatelessWidget {
           ChangeNotifierProvider(create: (_) => UserInfo()),
           ChangeNotifierProvider(create: (_) => ItemInfo())
         ],
-        child: EasyLocalization(
-            supportedLocales: [Locale('en', ''), Locale('es', '')],
-            path: 'assets/translation',
-            fallbackLocale: Locale('en', ''),
-            saveLocale: true,
-            child: FutureBuilder(
-                future: Firebase.initializeApp(),
-                builder: (context, snapshot) {
-                  return FutureBuilder(
-                      future: storage.ready,
-                      builder: (context, snapshot) {
-                        var _storage = new LocalStorage('hugoapp.json');
-                        String u = _storage.getItem('loggedin');
-                        if (u != null && Provider.of<UserInfo>(context, listen: false).getUser() == '') {
-                          Provider.of<UserInfo>(context, listen: false).setUser(u);
-                        }
-                        return MaterialApp(
-                          title: 'HUGO',
-                          debugShowCheckedModeBanner: false,
-                          theme: ThemeData(
-                            primarySwatch: Colors.blue,
-                            visualDensity:
-                                VisualDensity.adaptivePlatformDensity,
-                          ),
-                          home: MyHomePage(),
-                          localizationsDelegates: context.localizationDelegates,
-                          supportedLocales: context.supportedLocales,
-                          locale: context.locale,
-                        );
-                      });
-                })));
+        child: FutureBuilder(
+          future: Firebase.initializeApp(),
+          builder: (context, snapshot) {
+            return FutureBuilder(
+              future: atlas.init(),
+              builder: (context, snapshot) {
+                var _storage = new LocalStorage('hugoapp.json');
+                String u = _storage.getItem('loggedin');
+                if (u != null && Provider.of<UserInfo>(context, listen: false).getUser() == '') {
+                  Provider.of<UserInfo>(context, listen: false).setUser(u);
+                }
+                return MaterialApp(
+                  title: 'HUGO',
+                  debugShowCheckedModeBanner: false,
+                  theme: ThemeData(
+                    primarySwatch: Colors.blue,
+                    visualDensity: VisualDensity.adaptivePlatformDensity,
+                  ),
+                  localizationsDelegates: context.localizationDelegates,
+                  supportedLocales: context.supportedLocales,
+                  locale: context.locale,
+                  home: MyHomePage(),
+                );
+              }
+            );
+
+          }
+        ));
   }
 }
 
@@ -158,10 +160,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       shape: BoxShape.circle,
                       image: new DecorationImage(
                           fit: BoxFit.contain,
-                          image: new AssetImage(
-                              'assets/hicon.png')
-                      )
-                  )),
+                          image: new AssetImage('assets/hicon.png')))),
               // Image.asset(
               //   'assets/hicon.png',
               //   height: 150,
@@ -190,7 +189,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         new MaterialPageRoute(
                             builder: (context) => new About()));
                   }),
-                  SizedBox(height: 20)
+              SizedBox(height: 20)
             ])),
           ],
         ),

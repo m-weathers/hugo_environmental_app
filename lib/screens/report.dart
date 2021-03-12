@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:provider/provider.dart';
 
@@ -10,6 +9,8 @@ import 'package:hugo/screens/history.dart';
 import 'package:hugo/screens/login.dart';
 import 'package:hugo/screens/search.dart';
 import 'package:hugo/screens/view.dart';
+
+import '../atlas.dart' as atlas;
 
 class Report extends StatefulWidget {
   final String dText;
@@ -28,18 +29,19 @@ class ReportState extends State<Report> {
   DateTime start, end;
   Auth _auth = new Auth();
   var _history = [];
+  Map<String, dynamic> _data = {};
   double _total = 0.0;
   bool canDelete;
 
   Future<int> _get() async {
     _total = 0.0;
-    _history = await _auth.getPurchases2(
+    _history = await atlas.getPurchases(
         Provider.of<UserInfo>(context, listen: false).getUser(), start, end);
-    print(_total);
-    for (var purchase in _history) {
-      purchase['image'] =
-          await _auth.fileUrl('products/' + purchase['item'] + '.jpg');
-      purchase['weight'] = purchase['index'] * purchase['amount'];
+
+    for (Map<String, dynamic> purchase in _history) {
+      Map<String, dynamic> pData = await atlas.getProductCached(context, purchase['item']);
+      _data[purchase['item']] = pData;
+      purchase['weight'] = pData['INDEX'] * purchase['qty'];
       _total += purchase['weight'];
     }
     return 0;
@@ -103,43 +105,41 @@ class ReportState extends State<Report> {
                       primary: false,
                       itemCount: _history.length,
                       itemBuilder: (BuildContext ctxt, int index) {
+                        String item = _history[index]['item'];
+                        Map<String, dynamic> pData = _data[item];
                         return new ListTile(
                             title: Text(
-                              _history[index]['item'],
+                              item,
                               overflow: TextOverflow.ellipsis,
                             ),
                             subtitle: Text(
-                                '''${_history[index]["index"]} x ${_history[index]["amount"]} = ${_history[index]["weight"]}
-${_history[index]["date"].toDate().toUtc().toString().split(".")[0]}'''),
+                                '''${pData["INDEX"]} x ${_history[index]["qty"]} = ${_history[index]["weight"]}
+${_history[index]["date"].toUtc().toString().split(".")[0]}'''),
                             trailing: canDelete
                                 ? IconButton(
                                     icon: Icon(Icons.delete),
                                     onPressed: () async {
-                                      await _auth.deletePurchase2(
+                                      atlas.deletePurchase(
                                           Provider.of<UserInfo>(context,
                                                   listen: false)
                                               .getUser(),
-                                          _history[index]);
+                                          _history[index], pData['INDEX']);
                                       setState(() {
                                         _total = 0.0;
                                       });
                                     })
                                 : null,
-                            tileColor: _auth.getColorRG(
-                                _history[index]['index'], 200, 0.5),
+                            tileColor: atlas.getColorRG(
+                                pData['INDEX'].toDouble(), 200, 0.5),
                             leading: Container(
-                              child: CachedNetworkImage(
-                                  imageUrl: _history[index]['image'],
-                                  fit: BoxFit.fill,
-                                  progressIndicatorBuilder: (context, url,
-                                          downloadProgress) =>
-                                      CircularProgressIndicator(
-                                          value: downloadProgress.progress)),
+                              child: Image.memory(
+                                  pData['IMAGE'].byteList,
+                                  fit: BoxFit.fill),
                             ),
                             onTap: () async {
                               Map<String, dynamic> itemData =
-                                  await _auth.getProductCached(
-                                      context, _history[index]['item']);
+                                  await atlas.getProductCached(
+                                      context, item);
                               if (!canDelete) {
                                 Navigator.push(
                                     context,
