@@ -2,7 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flushbar/flushbar.dart';
+import 'package:another_flushbar/flushbar.dart';
 import 'package:provider/provider.dart';
 
 import 'package:hugo/main.dart';
@@ -27,16 +27,16 @@ class ViewState extends State<View> {
   Map<String, dynamic> _data;
   TextEditingController myController = TextEditingController()..text = '1';
 
-  List<Widget> _c1Text,
-      _c1Stars,
-      _c2Text,
-      _c2Stars,
-      _c3Text,
-      _c3Stars,
-      _c4Text,
-      _c4Stars,
-      _c5Text,
-      _c5Stars;
+  List<Widget> _c1Text = [],
+      _c1Stars = [],
+      _c2Text = [],
+      _c2Stars = [],
+      _c3Text = [],
+      _c3Stars = [],
+      _c4Text = [],
+      _c4Stars = [],
+      _c5Text = [],
+      _c5Stars = [];
 
   ViewState(this._data);
 
@@ -134,7 +134,14 @@ class ViewState extends State<View> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: <Widget>[
                 SizedBox(width: 16),
-                Text('${_data["_id"]}', style: TextStyle(fontSize: 18.0)),
+                Container(
+                    width: MediaQuery.of(context).size.width * 0.9,
+                    child: Text(
+                      '${_data["_id"]}',
+                      style: TextStyle(fontSize: 18.0),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 20,
+                    )),
               ]),
           SizedBox(height: 8),
           Row(
@@ -151,7 +158,7 @@ class ViewState extends State<View> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: <Widget>[
                 Hero(
-                    child: Image.memory(_data['IMAGE'].byteList,
+                    child: Image.memory(_data['IMAGE'],
                         fit: BoxFit.fitHeight, height: 120, width: 120),
                     tag: _data['_id']),
                 SizedBox(width: 30),
@@ -189,15 +196,11 @@ class ViewState extends State<View> {
                       ),
                       controller: myController,
                       onChanged: (String text) {
-                        if (isNumeric(text) && double.parse(text) > 0) {
-                          _amount = double.parse(text);
-                        } else {
-                          _amount = 0;
-                        }
+                        _amount = double.tryParse(text) ?? 0.0;
                       }),
                 ),
                 SizedBox(width: 20),
-                FlatButton(
+                TextButton(
                     child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.center,
@@ -239,7 +242,7 @@ class ViewState extends State<View> {
                     })
               ]),
           SizedBox(height: 8),
-          FlatButton(
+          TextButton(
               child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -291,19 +294,14 @@ class ViewState extends State<View> {
   }
 
   bool isNumeric(String s) {
-    if (s == null) {
-      return false;
-    }
-    return double.parse(s, (e) => null) != null;
+    return ((double.tryParse(s) ?? double.nan) == double.nan);
   }
 }
 
 // https://medium.com/icnh/a-star-rating-widget-for-flutter-41560f82c8cb
 class StarDisplay extends StatelessWidget {
   final int value;
-  const StarDisplay({Key key, this.value = 0})
-      : assert(value != null),
-        super(key: key);
+  const StarDisplay({Key? key, this.value = 0}) : super(key: key);
   @override
   Widget build(BuildContext context) {
     return Row(

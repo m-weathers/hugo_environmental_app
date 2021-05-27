@@ -2,7 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flushbar/flushbar.dart';
+import 'package:another_flushbar/flushbar.dart';
 import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
 import 'package:provider/provider.dart';
 
@@ -21,7 +21,7 @@ class Search extends StatefulWidget {
 }
 
 class SearchState extends State<Search> {
-  List<Map<String, dynamic>> _results = new List<Map<String, dynamic>>();
+  List<Map<String, dynamic>> _results = [];
   String _userSearchTerm = '', _category = 'All';
   bool _isDoingSearch = false;
 
@@ -80,9 +80,9 @@ class SearchState extends State<Search> {
                               value: _category,
                               icon: Icon(CupertinoIcons.arrow_down),
                               iconSize: 24,
-                              onChanged: (String newvalue) {
+                              onChanged: (String? newvalue) {
                                 setState(() {
-                                  _category = newvalue;
+                                  _category = newvalue!;
                                 });
                               },
                               items: atlas.categories
@@ -110,7 +110,7 @@ class SearchState extends State<Search> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: <Widget>[
-                      FlatButton(
+                      TextButton(
                           child: Row(children: <Widget>[
                             Icon(Icons.search),
                             SizedBox(width: 6),
@@ -124,7 +124,7 @@ class SearchState extends State<Search> {
                             }
                           }),
                       SizedBox(width: 15),
-                      FlatButton(
+                      TextButton(
                         child: Row(children: <Widget>[
                           Icon(CupertinoIcons.barcode),
                           SizedBox(width: 6),
@@ -189,9 +189,11 @@ class SearchState extends State<Search> {
                           leading: Hero(
                             child: Container(
                               child: Image.memory(
-                                _results[index]['IMAGE'].byteList,
-                                fit: BoxFit.fill
-                              ),
+                                _results[index]['IMAGE'],
+                                fit: BoxFit.fill,
+                                width: 55,
+                                height: 55
+                              )
                             ),
                             tag: _results[index]['_id'],
                           ));
@@ -219,8 +221,11 @@ class SearchState extends State<Search> {
           .show(context);
 
     }
+    // getSearch returns item data straight from Atlas so to get the complete
+    // data, call finishProductInfo (does calculations to avoid storing
+    // unnecessary data in Atlas).
     await Future.forEach(_names, (Map<String, dynamic> itemData) async {
-      _results.add(atlas.finishProductInfo(itemData));
+      _results.add(await atlas.finishProductInfo(itemData));
       setState(() {});
     });
 

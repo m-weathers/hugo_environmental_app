@@ -1,9 +1,41 @@
+/*
+ * HUGO App v2021.05.12
+ *
+ * What each file does:
+ * atlas.dart: General functions and global variables used by multiple pages,
+ *    as well as functions that interact w/ MongoDB Atlas. Only needs to be
+ *    imported to be used.
+ * auth.dart: Does user registration & login. Used to contain many of the
+ *    functions that atlas.dart does now. Requires an instance of it to be
+ *    instantiated.
+ * main.dart: The home page. Navigates to about.dart, search.dart, history.dart,
+ *    and login.dart (the Profile button will navigate to history.dart if a user
+ *    is logged in already and login.dart if not).
+ *
+ * screens/about.dart: Displays info about the app.
+ * screens/history.dart: Shows a list of months, the score for each (i.e.
+ *    the total of items_purchased*hugo_index, and the percentage change from
+ *    the previous month (e.g. up 50%, down 30%).
+ * screens/login.dart: Login page. Option to register if user doesn't have
+ *    account. Authentication is done through Firebase.
+ * screens/register.dart: Register a new account.
+ * screens/report.dart: Displays a list of items purchased by a user for a
+ *    given timeframe. The timeframe is determined by the two DateTimes passed
+ *    to it.
+ * screens/search.dart: Searches items based on a query and a category. Number
+ *    of results is limited to 25. Searching with a category and no query will
+ *    return 25 items from that category.
+ * screens/view.dart: View an item's info, has the option to add the item to
+ *    a user's purchase history.
+ */
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:localstorage/localstorage.dart';
+import 'package:mongo_dart/mongo_dart.dart' as mongo;
 import 'package:provider/provider.dart';
 
 import 'package:hugo/screens/about.dart';
@@ -13,7 +45,21 @@ import 'package:hugo/screens/search.dart';
 
 import 'atlas.dart' as atlas;
 
-void main() {
+// LocalStorage is used to track whether the user is logged-in between sessions.
+LocalStorage storage = new LocalStorage('hugoapp.json');
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  // Wait to ensure Atlas, Firebase, LocalStorage, and EasyLocalization are ready.
+  mongo.Db db = await mongo.Db.create('mongodb+srv://');
+  await EasyLocalization.ensureInitialized();
+  await storage.ready;
+  await Firebase.initializeApp();
+  await db.open(secure: true);
+  // Other pages access Atlas through atlas.dart, so set atlas.db to the DB
+  // just created.
+  atlas.db = db;
+
   runApp(
     EasyLocalization(
         supportedLocales: [Locale('en', ''), Locale('es', '')],
@@ -27,38 +73,28 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
+      // The two providers used are UserInfo and ItemInfo. UserInfo allows any page
+      // to check the currently logged-in user and ItemInfo acts as a sort of cache
+      // to avoid repeatedly retrieving item information when necessary. ItemInfo
+      // is NOT currently used with user searches in search.dart, only with history.dart
+      // and report.dart.
         providers: [
           ChangeNotifierProvider(create: (_) => UserInfo()),
           ChangeNotifierProvider(create: (_) => ItemInfo())
         ],
-        child: FutureBuilder(
-          future: Firebase.initializeApp(),
-          builder: (context, snapshot) {
-            return FutureBuilder(
-              future: atlas.init(),
-              builder: (context, snapshot) {
-                var _storage = new LocalStorage('hugoapp.json');
-                String u = _storage.getItem('loggedin');
-                if (u != null && Provider.of<UserInfo>(context, listen: false).getUser() == '') {
-                  Provider.of<UserInfo>(context, listen: false).setUser(u);
-                }
-                return MaterialApp(
-                  title: 'HUGO',
-                  debugShowCheckedModeBanner: false,
-                  theme: ThemeData(
-                    primarySwatch: Colors.blue,
-                    visualDensity: VisualDensity.adaptivePlatformDensity,
-                  ),
-                  localizationsDelegates: context.localizationDelegates,
-                  supportedLocales: context.supportedLocales,
-                  locale: context.locale,
-                  home: MyHomePage(),
-                );
-              }
-            );
-
-          }
-        ));
+        child: MaterialApp(
+          title: 'HUGO',
+          debugShowCheckedModeBanner: false,
+          theme: ThemeData(
+            primarySwatch: Colors.blue,
+            visualDensity: VisualDensity.adaptivePlatformDensity,
+          ),
+          localizationsDelegates: context.localizationDelegates,
+          supportedLocales: context.supportedLocales,
+          locale: context.locale,
+          home: MyHomePage(),
+        )
+    );
   }
 }
 
@@ -72,19 +108,27 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   _MyHomePageState();
 
-  String _language;
+  String _language = '';
   List<String> _languages = ['en', 'es'];
   Map<String, String> _ccIcons = {'en': 'us', 'es': 'mx'};
   Map<String, String> _langMap = {'en': 'English', 'es': 'Español'};
 
+  String u = storage.getItem('loggedin');
+
   @override
   Widget build(BuildContext context) {
     _language = context.locale.languageCode;
+    // If LocalStorage returns a current user, set the UserInfo provider to say as much.
+    if (Provider.of<UserInfo>(context, listen: false).getUser() == '') {
+      Provider.of<UserInfo>(context, listen: false).setUser(u);
+    }
 
     return Scaffold(
       appBar: AppBar(
         title: Text('HUGO'),
       ),
+      // Navigation options are main.dart, search.dart, and history.dart (or
+      // login.dart if no user currently logged in).
       bottomNavigationBar: BottomNavigationBar(
           items: <BottomNavigationBarItem>[
             BottomNavigationBarItem(icon: Icon(Icons.home), label: tr('home')),
@@ -117,6 +161,7 @@ class _MyHomePageState extends State<MyHomePage> {
             Expanded(
                 child: ListView(children: <Widget>[
               SizedBox(height: 10),
+              // Menu to let the user switch between languages.
               Row(
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: <Widget>[
@@ -125,10 +170,10 @@ class _MyHomePageState extends State<MyHomePage> {
                     value: _language,
                     icon: Icon(CupertinoIcons.arrow_down),
                     iconSize: 24,
-                    onChanged: (String newvalue) {
+                    onChanged: (String? newvalue) {
                       setState(() {
-                        _language = newvalue;
-                        context.locale = Locale(_language, '');
+                        _language = newvalue!;
+                        context.setLocale(Locale(_language, ''));
                       });
                     },
                     items: _languages
@@ -145,7 +190,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                   width: 24,
                                   fit: BoxFit.fill),
                               SizedBox(width: 6),
-                              Text(_langMap[value])
+                              Text(_langMap[value] ?? '')
                             ]),
                       );
                     }).toList(),
@@ -153,6 +198,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 ],
               ),
               SizedBox(height: 50),
+              // Show the app logo.
               Container(
                   width: 140.0,
                   height: 140.0,
@@ -181,7 +227,8 @@ class _MyHomePageState extends State<MyHomePage> {
                     ),
                   ]),
               SizedBox(height: 60),
-              RaisedButton(
+              // Button to show about.dart, which explains the app.
+              ElevatedButton(
                   child: Text(tr('howAre'), textAlign: TextAlign.center),
                   onPressed: () {
                     Navigator.push(
@@ -198,6 +245,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
+// Stores the currently logged in user.
 class UserInfo with ChangeNotifier {
   String _user = '';
 
@@ -211,6 +259,7 @@ class UserInfo with ChangeNotifier {
   }
 }
 
+// Stores a list of item info.
 class ItemInfo with ChangeNotifier {
   Map<String, dynamic> _items = {};
 

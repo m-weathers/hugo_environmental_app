@@ -81,7 +81,7 @@ class HistoryState extends State<History> {
                   Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: <Widget>[
-                        FlatButton(
+                        TextButton(
                             child: Text(tr('logout')),
                             onPressed: () {
                               Provider.of<UserInfo>(context, listen: false)
@@ -113,7 +113,7 @@ class HistoryState extends State<History> {
                         double s2 = i2 == 0 ? 0.0 : _monthScores[ymp].toDouble();
                         return new ListTile(
                             title: Text(
-                                _monthsExp[ym.substring(4, 6)] + ' ' + ym.substring(0, 4)
+                                _monthsExp[ym.substring(4, 6)]! + ' ' + ym.substring(0, 4)
                             ),
                             subtitle: Text('$s1'),
                              trailing: i2 == 0 ? null : Container(
@@ -141,7 +141,7 @@ class HistoryState extends State<History> {
                                   context,
                                   new MaterialPageRoute(
                                       builder: (context) => new Report(
-                                          _monthsExp[ym.substring(4, 6)] + ' ' + ym.substring(0, 4),
+                                          _monthsExp[ym.substring(4, 6)]! + ' ' + ym.substring(0, 4),
                                           DateTime.utc(year, month),
                                           DateTime.utc(year, month + 1)
                                               .subtract(Duration(seconds: 1)),

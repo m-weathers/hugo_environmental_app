@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flushbar/flushbar.dart';
+import 'package:another_flushbar/flushbar.dart';
 import 'package:provider/provider.dart';
 
 import 'package:hugo/auth.dart';
@@ -15,13 +15,13 @@ class Register extends StatefulWidget {
 class RegisterState extends State<Register> {
   Auth _auth = new Auth();
 
-  String currentSelectedValue;
+  String currentSelectedValue = '';
   final GlobalKey<FormState> _formKey = new GlobalKey<FormState>();
   final _cEmail = TextEditingController(), _cPassword = TextEditingController();
 
   void _submitForm() {
-    final FormState form = _formKey.currentState;
-    if (form.validate()) {
+    final FormState? form = _formKey.currentState;
+    if (form!.validate()) {
       form.save();
       _auth.userRegister(_cEmail.text, _cPassword.text).then((bool success) {
         if (success) {
@@ -76,7 +76,7 @@ class RegisterState extends State<Register> {
                             ),
                             keyboardType: TextInputType.emailAddress,
                             validator: (value) {
-                              if (value.isEmpty) {
+                              if (value!.isEmpty) {
                                 return tr('noBlank');
                               }
                               if (value.indexOf('@') + 1 < value.indexOf('.') &&
@@ -97,7 +97,7 @@ class RegisterState extends State<Register> {
                               labelText: tr('password'),
                             ),
                             validator: (value) {
-                              if (value.isEmpty) {
+                              if (value!.isEmpty) {
                                 return tr('noBlank');
                               }
                               if (value.length < 6) {
@@ -121,7 +121,7 @@ class RegisterState extends State<Register> {
                             },
                           ),
                           SizedBox(height: 7.5),
-                          RaisedButton(
+                          ElevatedButton(
                               child: Text(tr('register')), onPressed: _submitForm),
                         ],
                       ),

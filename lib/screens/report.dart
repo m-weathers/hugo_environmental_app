@@ -27,7 +27,6 @@ class Report extends StatefulWidget {
 class ReportState extends State<Report> {
   String dText;
   DateTime start, end;
-  Auth _auth = new Auth();
   var _history = [];
   Map<String, dynamic> _data = {};
   double _total = 0.0;
@@ -133,7 +132,7 @@ ${_history[index]["date"].toUtc().toString().split(".")[0]}'''),
                                 pData['INDEX'].toDouble(), 200, 0.5),
                             leading: Container(
                               child: Image.memory(
-                                  pData['IMAGE'].byteList,
+                                  pData['IMAGE'],
                                   fit: BoxFit.fill),
                             ),
                             onTap: () async {

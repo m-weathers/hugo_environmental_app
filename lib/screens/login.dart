@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flushbar/flushbar.dart';
+import 'package:another_flushbar/flushbar.dart';
 import 'package:provider/provider.dart';
 
 import 'package:hugo/auth.dart';
@@ -16,14 +16,14 @@ class Login extends StatefulWidget {
 }
 
 class LoginState extends State<Login> {
-  String _email, _password;
+  String _email = '', _password = '';
 
   final GlobalKey<FormState> _formKey = new GlobalKey<FormState>();
   Auth _auth = new Auth();
 
   void _submitForm() {
-    final FormState form = _formKey.currentState;
-    if (form.validate()) {
+    final FormState? form = _formKey.currentState;
+    if (form!.validate()) {
       form.save();
       _auth.userLogin(_email, _password).then((bool success) {
         if (success) {
@@ -74,7 +74,7 @@ class LoginState extends State<Login> {
                             ),
                             keyboardType: TextInputType.emailAddress,
                             validator: (value) {
-                              if (value.isEmpty) {
+                              if (value!.isEmpty) {
                                 return tr('noBlank');
                               }
                               if (value.indexOf('@') + 1 < value.indexOf('.') &&
@@ -95,7 +95,7 @@ class LoginState extends State<Login> {
                               labelText: tr('password'),
                             ),
                             validator: (value) {
-                              if (value.isEmpty) {
+                              if (value!.isEmpty) {
                                 return tr('noBlank');
                               }
                               _password = value;
@@ -103,11 +103,11 @@ class LoginState extends State<Login> {
                             },
                           ),
                           SizedBox(height: 7.5),
-                          RaisedButton(
+                          ElevatedButton(
                               onPressed: _submitForm,
                               child: Text(tr('login'))),
                           SizedBox(height: 15),
-                          FlatButton(
+                          TextButton(
                             child: Text(tr('register')),
                             onPressed: () {
                               Navigator.push(
